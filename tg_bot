@@ -1,0 +1,139 @@
+! pip install pytelegrambotapi
+
+import telebot
+import math
+
+# Ваш токен HTTP API
+TOKEN = '6050792816:AAEnDXf6iRX80gFGApsR9-F6BP60oguQPVM'
+
+# Создаем экземпляр бота
+bot = telebot.TeleBot(TOKEN)
+
+digits = { 
+    'ноль': 0, 
+    'один': 1, 
+    'два': 2, 
+    'три': 3, 
+    'четыре': 4, 
+    'пять': 5, 
+    'шесть': 6, 
+    'семь': 7, 
+    'восемь': 8, 
+    'девять': 9, 
+    'десять': 10, 
+    'одиннадцать': 11, 
+    'двенадцать': 12, 
+    'тринадцать': 13, 
+    'четырнадцать': 14, 
+    'пятнадцать': 15, 
+    'шестнадцать': 16, 
+    'семнадцать': 17, 
+    'восемнадцать': 18, 
+    'девятнадцать': 19, 
+    'двадцать': 20, 
+    'тридцать': 30, 
+    'сорок': 40, 
+    'пятьдесят': 50, 
+    'шестьдесят': 60, 
+    'семьдесят': 70, 
+    'восемьдесят': 80, 
+    'девяносто': 90, 
+    'сто': 100, 
+    'двести': 200, 
+    'триста': 300, 
+    'четыреста': 400, 
+    'пятсот': 500, 
+    'шестьсот': 600, 
+    'семьсот': 700, 
+    'восемьсот': 800, 
+    'девятьсот': 900, 
+    'одна тысяча': 1000, 
+    'две тысячи': 2000, 
+    'три тысячи': 3000, 
+    'четыре тысячи': 4000, 
+    'пять тысяч': 5000, 
+    'шесть тысяч': 6000, 
+    'семь тысяч': 7000, 
+    'восемь тысяч': 8000, 
+    'девять тысяч': 9000 
+} 
+
+opers = { 
+    'плюс': lambda x, y: x + y, 
+    'минус': lambda x, y: x - y, 
+    'умножить': lambda x, y: x * y 
+} 
+
+# Создаем перевернутый словарь для цифр. В нем цифра - это ключ, а слово - значение
+reverseDigits = dict(zip(digits.values(), digits.keys()))
+
+
+# основная функция
+def calc(s: str) -> str: 
+    expression = s.split()  # разбиваем ввод на слова 
+ 
+    temp = 0 
+    sign = None  # переменная для операции 
+    x = 0  # переменная для первого числа выражения 
+    numsign = 'плюс'  # знак числа, если попадется отрицательное 
+    # переводим выражение в арифметический вид 
+    for i in expression: 
+        if i not in opers: 
+            temp += opers[numsign](0, digits[i]) 
+        else: 
+            if sign in opers or i is expression[0]: 
+                numsign = i 
+                continue 
+            sign = i 
+            x = temp 
+            temp = 0 
+            numsign = 'плюс' 
+ 
+    preresult = opers[sign](x, temp)  # считаем выражение 
+ 
+    # переводим результат в слова 
+    result = [] 
+    temp = 0 
+    abs_res = abs(preresult) 
+    while abs_res != 0: 
+        if (abs_res % 10) == 0: 
+            abs_res //= 10 
+            temp += 1 
+            continue 
+        else: 
+            if 10 < abs_res % 100 < 20 and temp < 1: 
+                result.append(reverseDigits[(abs_res % 100)]) 
+                abs_res = abs_res // 100 
+                temp += 2 
+            else: 
+                result.append(reverseDigits[(abs_res % 10) * (10 ** temp)]) 
+                # abs_res = math.floor(abs_res / 10) 
+                abs_res = abs_res // 10 
+                temp += 1 
+ 
+    if preresult < 0: 
+        result.append('минус') 
+    result.reverse() 
+    return ' '.join(result) 
+    pass
+
+
+# Обработка команды /start
+@bot.message_handler(commands=['start'])
+def send_welcome(message):
+    bot.reply_to(message, "Hello! You can calculate expressions with numbers in range 1-100.")
+
+
+# Обработка текстовых сообщений
+@bot.message_handler(func=lambda message: True)
+def calculate_expression(message):
+    try:
+        expression = message.text
+        result = calc(expression)
+        bot.reply_to(message, result)
+    except Exception as e:
+        bot.reply_to(message, "Error occurred: " + str(e))
+
+
+# Запуск бота
+bot.polling()
